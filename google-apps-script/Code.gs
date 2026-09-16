@@ -104,6 +104,20 @@ function getSheet() {
 
 function appendRow(values) {
   const sheet = getSheet();
+  const id = values[0];
+
+  // Idempotente: se o app cliente repetir a chamada (ex.: após uma resposta
+  // perdida na rede) e a linha já tiver sido gravada, não duplica.
+  const lastRow = sheet.getLastRow();
+  if (lastRow >= 2) {
+    const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]) === String(id)) {
+        return { ok: true, duplicado: true };
+      }
+    }
+  }
+
   sheet.appendRow(values);
   return { ok: true };
 }
