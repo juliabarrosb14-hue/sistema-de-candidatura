@@ -1,48 +1,62 @@
 import { Fragment } from 'react';
+import {
+  Clock,
+  Crown,
+  GraduationCap,
+  Gem,
+  Lightbulb,
+  Star,
+  Target,
+  Trophy,
+  UserRound,
+  Users,
+  TrendingUp,
+  type LucideIcon
+} from 'lucide-react';
 
-const PRINCIPIOS = [
+const PRINCIPIOS: { icone: LucideIcon; titulo: string; texto: string }[] = [
   {
-    icone: '📈',
+    icone: TrendingUp,
     titulo: 'Crescimento por mérito',
     texto:
       'A sua evolução é reconhecida com base no seu desempenho, nas suas entregas e no impacto que você gera para o time e para a Drenesse.'
   },
   {
-    icone: '⏱️',
+    icone: Clock,
     titulo: 'Tempo não garante promoção',
     texto:
       'Cumprir o tempo mínimo só torna o colaborador elegível à avaliação. A evolução acontece com base em resultados e competências.'
   },
   {
-    icone: '🎯',
+    icone: Target,
     titulo: 'Critérios objetivos',
     texto:
       'Toda promoção é baseada em critérios pré-definidos por cargo e nível, garantindo mais transparência, justiça e clareza para todos.'
   },
   {
-    icone: '💡',
+    icone: Lightbulb,
     titulo: 'Desenvolvimento contínuo',
     texto:
       'Temos trilhas de aprendizado, treinamentos e ferramentas para que você desenvolva suas habilidades e alcance o próximo nível com segurança.'
   },
   {
-    icone: '👥',
+    icone: Users,
     titulo: 'Equidade',
     texto: 'Mesmo cargo e nível = mesmos critérios de avaliação, respeitadas as particularidades de cada função e setor.'
   },
   {
-    icone: '🏆',
+    icone: Trophy,
     titulo: 'Resultado + comportamento',
     texto: 'Aqui, o que importa é o equilíbrio: resultado, competência, comportamento, cultura e conhecimento técnico.'
   }
 ];
 
-const ETAPAS = [
-  { nome: 'Estágio', niveis: 'I → IV', descricao: 'Aprendizado e autonomia', icone: '🎓' },
-  { nome: 'Analista', niveis: 'I → II', descricao: 'Especialização e maior impacto', icone: '⭐' },
-  { nome: 'Supervisão', niveis: 'I → IV', descricao: 'Liderança e gestão de pessoas', icone: '🧑‍💼' },
-  { nome: 'Coordenação', niveis: 'I → IV', descricao: 'Gestão de operação e resultados', icone: '👑' },
-  { nome: 'Gerência', niveis: 'I → IV', descricao: 'Visão estratégica e expansão', icone: '💎' }
+const ETAPAS: { nome: string; niveis: string; descricao: string; icone: LucideIcon }[] = [
+  { nome: 'Estágio', niveis: 'I → IV', descricao: 'Aprendizado e autonomia', icone: GraduationCap },
+  { nome: 'Analista', niveis: 'I → II', descricao: 'Especialização e maior impacto', icone: Star },
+  { nome: 'Supervisão', niveis: 'I → IV', descricao: 'Liderança e gestão de pessoas', icone: UserRound },
+  { nome: 'Coordenação', niveis: 'I → IV', descricao: 'Gestão de operação e resultados', icone: Crown },
+  { nome: 'Gerência', niveis: 'I → IV', descricao: 'Visão estratégica e expansão', icone: Gem }
 ];
 
 const OPACIDADE_ETAPA = ['bg-drenesse-red/45', 'bg-drenesse-red/60', 'bg-drenesse-red/75', 'bg-drenesse-red/90', 'bg-drenesse-red'];
@@ -83,8 +97,8 @@ export function PlanoCarreira() {
       <div className="grid gap-4 p-6 sm:grid-cols-2 sm:p-8 lg:grid-cols-3">
         {PRINCIPIOS.map((p) => (
           <div key={p.titulo} className="rounded-2xl border border-neutral-100 bg-neutral-50 p-5">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-drenesse-red/10 text-xl">
-              {p.icone}
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-drenesse-red/10 text-drenesse-red">
+              <p.icone size={20} strokeWidth={2.25} />
             </div>
             <p className="text-sm font-bold text-drenesse-ink">{p.titulo}</p>
             <div className="my-2 h-px w-6 bg-drenesse-red/40" />
@@ -96,7 +110,10 @@ export function PlanoCarreira() {
       <div className="border-t border-neutral-100 bg-neutral-50/70 p-6 sm:p-8">
         <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="font-display text-lg font-bold text-drenesse-ink">📈 Sua evolução</p>
+            <p className="font-display flex items-center gap-2 text-lg font-bold text-drenesse-ink">
+              <TrendingUp size={18} className="text-drenesse-red" strokeWidth={2.5} />
+              Sua evolução
+            </p>
             <p className="text-xs text-neutral-500">É real, é possível, é com a gente.</p>
           </div>
           <p className="max-w-xs text-xs leading-relaxed text-neutral-500 sm:text-right">
@@ -109,9 +126,9 @@ export function PlanoCarreira() {
             <Fragment key={etapa.nome}>
               <div className="flex w-[104px] shrink-0 flex-col items-center text-center sm:w-auto sm:flex-1">
                 <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-full text-xl text-white shadow-glow ${OPACIDADE_ETAPA[i]}`}
+                  className={`flex h-14 w-14 items-center justify-center rounded-full text-white shadow-glow ${OPACIDADE_ETAPA[i]}`}
                 >
-                  {etapa.icone}
+                  <etapa.icone size={22} strokeWidth={2.25} />
                 </div>
                 <p className="mt-2 text-xs font-bold uppercase tracking-wide text-drenesse-ink">{etapa.nome}</p>
                 <p className="text-[10px] font-semibold text-drenesse-red">{etapa.niveis}</p>
