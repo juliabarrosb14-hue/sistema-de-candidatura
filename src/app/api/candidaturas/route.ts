@@ -10,6 +10,9 @@ import { getVagaBySlug } from '@/lib/vagas';
 import type { CandidaturaPayload, CandidatoRow, Curriculo } from '@/lib/types';
 
 export const runtime = 'nodejs';
+// Envio + base64 do currículo pelo Apps Script pode levar vários segundos para
+// arquivos maiores — o padrão da Vercel (10s) não é suficiente.
+export const maxDuration = 60;
 
 const MAX_SIZE_MB = Number(process.env.MAX_RESUME_SIZE_MB || 8);
 

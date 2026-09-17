@@ -4,6 +4,10 @@ import { buscarCandidatoPorId } from '@/lib/sheetsDb';
 import { baixarCurriculoDoDrive } from '@/lib/drive';
 import { GoogleConfigError } from '@/lib/appsScript';
 
+// Baixar e decodificar um currículo maior pelo Apps Script pode levar vários
+// segundos — o padrão da Vercel (10s) não é suficiente.
+export const maxDuration = 60;
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await estaAutenticado())) {
     return NextResponse.json({ erro: 'Não autorizado.' }, { status: 401 });
