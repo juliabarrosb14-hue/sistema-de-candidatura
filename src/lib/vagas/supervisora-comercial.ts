@@ -182,6 +182,23 @@ export const supervisoraComercial: VagaConfig = {
         'respeito',
         'organiz'
       ]
+    },
+    {
+      id: 'quandoPodeIniciar',
+      secao: 'disponibilidade',
+      texto: 'Quando poderia iniciar, caso fosse selecionada?',
+      tipo: 'select',
+      opcoes: ['Imediatamente', 'Até 15 dias', '15 a 30 dias', 'Mais de 30 dias'],
+      categoria: 'disponibilidade'
+    },
+    {
+      id: 'situacaoEmprego',
+      secao: 'disponibilidade',
+      texto: 'Você está trabalhando atualmente? Se sim, qual seu prazo de aviso prévio?',
+      tipo: 'select',
+      opcoes: ['Não estou trabalhando atualmente', 'Sim, sem aviso prévio', 'Sim, até 15 dias de aviso', 'Sim, 15 a 30 dias de aviso'],
+      obrigatoria: false,
+      categoria: 'disponibilidade'
     }
   ]
 };

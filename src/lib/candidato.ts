@@ -1,6 +1,7 @@
 import type { CandidatoRow, Curriculo, DiscScore, RespostasCandidato, StatusCandidatura } from './types';
 import { interpretarDiscParaRh } from './disc';
 import { getVagaBySlug } from './vagas';
+import { gerarAlertasRh } from './alertas';
 
 export interface CandidatoDetalhado {
   id: string;
@@ -25,11 +26,13 @@ export interface CandidatoDetalhado {
   status: StatusCandidatura;
   observacoesRh: string | null;
   lgpdAceite: boolean;
+  alertasRh: string[];
 }
 
 export function paraDetalhado(row: CandidatoRow): CandidatoDetalhado {
   const discPercentual: DiscScore = JSON.parse(row.discPercentualJson);
   const vaga = getVagaBySlug(row.vagaSlug);
+  const respostas: RespostasCandidato = JSON.parse(row.respostasJson || '{}');
 
   return {
     id: row.id,
@@ -43,7 +46,7 @@ export function paraDetalhado(row: CandidatoRow): CandidatoDetalhado {
     bairro: row.bairro,
     idade: row.idade,
     linkedin: row.linkedin,
-    respostas: JSON.parse(row.respostasJson || '{}'),
+    respostas,
     pretensaoSalarial: row.pretensaoSalarial,
     porQueEmpresa: row.porQueEmpresa,
     discPercentual,
@@ -53,6 +56,7 @@ export function paraDetalhado(row: CandidatoRow): CandidatoDetalhado {
     scoreClassificacao: row.scoreClassificacao,
     status: row.status,
     observacoesRh: row.observacoesRh,
-    lgpdAceite: !!row.lgpdAceite
+    lgpdAceite: !!row.lgpdAceite,
+    alertasRh: vaga ? gerarAlertasRh(vaga, respostas, row.pretensaoSalarial) : []
   };
 }

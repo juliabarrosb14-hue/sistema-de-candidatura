@@ -6,15 +6,29 @@ import type { CandidatoDetalhado } from '@/lib/candidato';
 import { STATUS_LABEL, STATUS_OPCOES, CLASSIFICACAO_COLOR } from '@/lib/status';
 import { DISC_FATOR_LABEL } from '@/lib/disc';
 import { getVagaBySlug } from '@/lib/vagas';
+import type { PerguntaConfig } from '@/lib/vagas/types';
 import { Card, GhostButton, PrimaryButton, TextArea } from '@/components/ui';
 
 const SIM_NAO_LABEL: Record<string, string> = { sim: 'Sim', nao: 'Não' };
+const EH_URL = /^https?:\/\//i;
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  const ehLink = typeof value === 'string' && EH_URL.test(value);
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
-      <p className="whitespace-pre-wrap text-sm font-medium text-neutral-800">{value || '—'}</p>
+      {ehLink ? (
+        <a
+          href={value as string}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all text-sm font-medium text-drenesse-red underline"
+        >
+          {value}
+        </a>
+      ) : (
+        <p className="whitespace-pre-wrap text-sm font-medium text-neutral-800">{value || '—'}</p>
+      )}
     </div>
   );
 }
@@ -25,6 +39,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="font-display mb-4 text-base font-bold text-drenesse-ink">{title}</h2>
       {children}
     </Card>
+  );
+}
+
+function SubGrupo({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-5 first:mt-0">
+      <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-drenesse-red">{titulo}</p>
+      {children}
+    </div>
   );
 }
 
@@ -92,10 +115,44 @@ export function CandidateDetail({ id }: { id: string }) {
   const perguntasExperiencia = vaga?.perguntas.filter((p) => p.secao === 'experiencia') || [];
   const perguntasDisponibilidade = vaga?.perguntas.filter((p) => p.secao === 'disponibilidade') || [];
 
+  const grupoPadrao = perguntasExperiencia.filter((p) => !p.categoria || p.categoria === 'experiencia');
+  const grupoTecnica = perguntasExperiencia.filter((p) => p.categoria === 'tecnica');
+  const grupoEstrategica = perguntasExperiencia.filter((p) => p.categoria === 'estrategica' || p.ehCase);
+  const grupoPortfolio = perguntasExperiencia.filter((p) => p.categoria === 'portfolio');
+
   function valorResposta(perguntaId: string, tipo: string) {
     const bruto = c.respostas[perguntaId];
     if (tipo === 'simNao') return SIM_NAO_LABEL[bruto] || bruto;
     return bruto;
+  }
+
+  function renderPerguntas(perguntas: PerguntaConfig[]) {
+    return (
+      <>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {perguntas
+            .filter((p) => p.tipo !== 'texto')
+            .map((p) => (
+              <Field key={p.id} label={p.texto} value={valorResposta(p.id, p.tipo)} />
+            ))}
+        </div>
+        {perguntas
+          .filter((p) => p.tipo === 'texto')
+          .map((p) => (
+            <div
+              key={p.id}
+              className={`mt-4 ${p.ehCase ? 'rounded-xl border border-drenesse-red/20 bg-drenesse-red/5 p-4' : ''}`}
+            >
+              {p.ehCase && (
+                <span className="mb-2 inline-block rounded-full bg-drenesse-red px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                  Situação prática
+                </span>
+              )}
+              <Field label={p.texto} value={c.respostas[p.id]} />
+            </div>
+          ))}
+      </>
+    );
   }
 
   return (
@@ -146,6 +203,23 @@ export function CandidateDetail({ id }: { id: string }) {
           </Card>
         </div>
 
+        {c.alertasRh.length > 0 && (
+          <Card className="border border-amber-200 bg-amber-50 p-6 sm:p-7">
+            <h2 className="font-display mb-3 text-base font-bold text-amber-800">Alertas para o RH</h2>
+            <ul className="space-y-1.5">
+              {c.alertasRh.map((alerta) => (
+                <li key={alerta} className="flex items-start gap-2 text-sm text-amber-900">
+                  <span>⚠️</span>
+                  {alerta}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-[11px] leading-relaxed text-amber-700">
+              Esses alertas são apenas informativos — não reprovam a candidata automaticamente.
+            </p>
+          </Card>
+        )}
+
         <Section title="Dados pessoais">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Nome completo" value={c.nomeCompleto} />
@@ -157,40 +231,17 @@ export function CandidateDetail({ id }: { id: string }) {
           </div>
         </Section>
 
-        <Section title="Experiência profissional">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {perguntasExperiencia
-              .filter((p) => p.tipo !== 'texto')
-              .map((p) => (
-                <Field key={p.id} label={p.texto} value={valorResposta(p.id, p.tipo)} />
-              ))}
-          </div>
-          {perguntasExperiencia
-            .filter((p) => p.tipo === 'texto')
-            .map((p) => (
-              <div key={p.id} className="mt-4">
-                <Field label={p.texto} value={c.respostas[p.id]} />
-              </div>
-            ))}
+        <Section title="Experiência e competências">
+          {renderPerguntas(grupoPadrao)}
+          {grupoTecnica.length > 0 && <SubGrupo titulo="Competências técnicas">{renderPerguntas(grupoTecnica)}</SubGrupo>}
+          {grupoEstrategica.length > 0 && (
+            <SubGrupo titulo="Respostas estratégicas">{renderPerguntas(grupoEstrategica)}</SubGrupo>
+          )}
+          {grupoPortfolio.length > 0 && <SubGrupo titulo="Portfólio">{renderPerguntas(grupoPortfolio)}</SubGrupo>}
         </Section>
 
         {perguntasDisponibilidade.length > 0 && (
-          <Section title="Disponibilidade">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {perguntasDisponibilidade
-                .filter((p) => p.tipo !== 'texto')
-                .map((p) => (
-                  <Field key={p.id} label={p.texto} value={valorResposta(p.id, p.tipo)} />
-                ))}
-            </div>
-            {perguntasDisponibilidade
-              .filter((p) => p.tipo === 'texto')
-              .map((p) => (
-                <div key={p.id} className="mt-4">
-                  <Field label={p.texto} value={c.respostas[p.id]} />
-                </div>
-              ))}
-          </Section>
+          <Section title="Disponibilidade">{renderPerguntas(perguntasDisponibilidade)}</Section>
         )}
 
         <Section title="Pretensão e motivação">

@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { MULTI_SELECT_SEPARADOR } from '@/lib/types';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
@@ -173,6 +174,54 @@ export function SimNaoToggle({
           {opt === 'sim' ? 'Sim' : 'Não'}
         </button>
       ))}
+    </div>
+  );
+}
+
+export function MultiSelectInput({
+  value,
+  onChange,
+  options
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  const selecionadas = value ? value.split(MULTI_SELECT_SEPARADOR).filter(Boolean) : [];
+
+  function alternar(opcao: string) {
+    const novoConjunto = selecionadas.includes(opcao)
+      ? selecionadas.filter((o) => o !== opcao)
+      : [...selecionadas, opcao];
+    onChange(novoConjunto.join(MULTI_SELECT_SEPARADOR));
+  }
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {options.map((opcao) => {
+        const marcada = selecionadas.includes(opcao);
+        return (
+          <button
+            key={opcao}
+            type="button"
+            onClick={() => alternar(opcao)}
+            className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-left text-sm transition ${
+              marcada
+                ? 'border-drenesse-red bg-drenesse-red/5 text-neutral-800'
+                : 'border-neutral-300 bg-white text-neutral-600 hover:border-neutral-400'
+            }`}
+          >
+            <span
+              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
+                marcada ? 'border-drenesse-red bg-drenesse-red text-white' : 'border-neutral-300'
+              }`}
+            >
+              {marcada ? '✓' : ''}
+            </span>
+            {opcao}
+          </button>
+        );
+      })}
     </div>
   );
 }

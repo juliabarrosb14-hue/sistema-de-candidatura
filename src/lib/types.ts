@@ -13,6 +13,9 @@ export interface DadosPessoais {
 /** Respostas às perguntas dinâmicas da vaga (VagaConfig.perguntas), chaveadas por id. */
 export type RespostasCandidato = Record<string, string>;
 
+/** Separador usado para juntar as opções marcadas de uma pergunta 'multiSelect' em uma única string. */
+export const MULTI_SELECT_SEPARADOR = '; ';
+
 export interface Curriculo {
   fileName: string;
   storedName: string;

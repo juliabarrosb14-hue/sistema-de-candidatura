@@ -1,13 +1,19 @@
-import type { DiscScore, RespostasCandidato } from './types';
-import type { VagaConfig } from './vagas/types';
+import { MULTI_SELECT_SEPARADOR, type DiscScore, type RespostasCandidato } from './types';
+import type { PesosScore, VagaConfig } from './vagas/types';
 
-const EXPERIENCIA_MAX = 40;
-const DISC_MAX = 25;
-const SEGMENTO_MAX = 10;
-const DISPONIBILIDADE_MAX = 10;
-const RESPOSTAS_ABERTAS_MAX = 15;
+const PESOS_PADRAO: PesosScore = {
+  experiencia: 40,
+  disc: 25,
+  segmento: 10,
+  disponibilidade: 10,
+  respostasAbertas: 15
+};
 
-function pontosExperiencia(vaga: VagaConfig, respostas: RespostasCandidato): number {
+function pesosDe(vaga: VagaConfig): PesosScore {
+  return vaga.pesos ?? PESOS_PADRAO;
+}
+
+function pontosExperiencia(vaga: VagaConfig, respostas: RespostasCandidato, max: number): number {
   const perguntas = vaga.perguntas.filter((p) => p.secao === 'experiencia' && !p.respostaAberta);
 
   let raw = 0;
@@ -24,6 +30,13 @@ function pontosExperiencia(vaga: VagaConfig, respostas: RespostasCandidato): num
       const valores = Object.values(p.pesoPorOpcao);
       rawMax += Math.max(0, ...valores);
       raw += p.pesoPorOpcao[resposta] ?? 0;
+    } else if (p.tipo === 'multiSelect' && p.pesoPorOpcaoMulti) {
+      const valores = Object.values(p.pesoPorOpcaoMulti);
+      rawMax += valores.reduce((a, b) => a + Math.max(0, b), 0);
+      const selecionadas = (resposta || '').split(MULTI_SELECT_SEPARADOR).filter(Boolean);
+      for (const opcao of selecionadas) {
+        raw += p.pesoPorOpcaoMulti[opcao] ?? 0;
+      }
     } else if (p.tipo === 'numero' && p.pesoPorFaixa) {
       const faixas = [...p.pesoPorFaixa].sort((a, b) => b.min - a.min);
       rawMax += Math.max(0, ...faixas.map((f) => f.pontos));
@@ -34,10 +47,10 @@ function pontosExperiencia(vaga: VagaConfig, respostas: RespostasCandidato): num
   }
 
   if (rawMax === 0) return 0;
-  return Math.min(EXPERIENCIA_MAX, (raw / rawMax) * EXPERIENCIA_MAX);
+  return Math.min(max, (raw / rawMax) * max);
 }
 
-function pontosDisc(percentuais: DiscScore, discAlvo: DiscScore): number {
+function pontosDisc(percentuais: DiscScore, discAlvo: DiscScore, max: number): number {
   const desvio =
     Math.abs(percentuais.D - discAlvo.D) +
     Math.abs(percentuais.I - discAlvo.I) +
@@ -46,19 +59,19 @@ function pontosDisc(percentuais: DiscScore, discAlvo: DiscScore): number {
 
   // desvio máximo teórico é 200 (perfis totalmente opostos); normaliza para 0-1.
   const aderencia = Math.max(0, 1 - desvio / 200);
-  return aderencia * DISC_MAX;
+  return aderencia * max;
 }
 
-function pontosSegmento(vaga: VagaConfig, respostas: RespostasCandidato): number {
+function pontosSegmento(vaga: VagaConfig, respostas: RespostasCandidato, max: number): number {
   if (!vaga.perguntaSegmentoId) return 0;
-  return respostas[vaga.perguntaSegmentoId] === 'sim' ? SEGMENTO_MAX : 0;
+  return respostas[vaga.perguntaSegmentoId] === 'sim' ? max : 0;
 }
 
-function pontosDisponibilidade(vaga: VagaConfig, respostas: RespostasCandidato): number {
+function pontosDisponibilidade(vaga: VagaConfig, respostas: RespostasCandidato, max: number): number {
   const perguntas = vaga.perguntas.filter((p) => p.secao === 'disponibilidade' && p.tipo === 'simNao');
   if (perguntas.length === 0) return 0;
   const totalSim = perguntas.filter((p) => respostas[p.id] === 'sim').length;
-  return (totalSim / perguntas.length) * DISPONIBILIDADE_MAX;
+  return (totalSim / perguntas.length) * max;
 }
 
 function qualidadeTexto(texto: string, palavrasChave: string[]): number {
@@ -86,15 +99,18 @@ const PALAVRAS_CHAVE_MOTIVACAO = ['cresc', 'oportunidade', 'desafio', 'aprend', 
 function pontosRespostasAbertas(
   vaga: VagaConfig,
   respostas: RespostasCandidato,
-  porQueEmpresa: string
+  porQueEmpresa: string,
+  max: number
 ): number {
   const perguntasAbertas = vaga.perguntas.filter((p) => p.tipo === 'texto' && p.respostaAberta);
 
-  const notas = perguntasAbertas.map((p) => qualidadeTexto(respostas[p.id] || '', p.palavrasChave || []));
+  const notas = perguntasAbertas.map((p) =>
+    qualidadeTexto(respostas[p.id] || '', [...(p.palavrasChave || []), ...(p.caseTemasBons || [])])
+  );
   notas.push(qualidadeTexto(porQueEmpresa, [...PALAVRAS_CHAVE_MOTIVACAO, vaga.empresa.toLowerCase()]));
 
   const media = notas.reduce((a, b) => a + b, 0) / notas.length;
-  return media * RESPOSTAS_ABERTAS_MAX;
+  return media * max;
 }
 
 export interface ScoreDetalhado {
@@ -122,11 +138,13 @@ export function calcularScoreAderencia(
   porQueEmpresa: string,
   percentuaisDisc: DiscScore
 ): ScoreDetalhado {
-  const experiencia = pontosExperiencia(vaga, respostas);
-  const disc = pontosDisc(percentuaisDisc, vaga.discAlvo);
-  const segmento = pontosSegmento(vaga, respostas);
-  const disponibilidade = pontosDisponibilidade(vaga, respostas);
-  const respostasAbertas = pontosRespostasAbertas(vaga, respostas, porQueEmpresa);
+  const pesos = pesosDe(vaga);
+
+  const experiencia = pontosExperiencia(vaga, respostas, pesos.experiencia);
+  const disc = pontosDisc(percentuaisDisc, vaga.discAlvo, pesos.disc);
+  const segmento = pontosSegmento(vaga, respostas, pesos.segmento);
+  const disponibilidade = pontosDisponibilidade(vaga, respostas, pesos.disponibilidade);
+  const respostasAbertas = pontosRespostasAbertas(vaga, respostas, porQueEmpresa, pesos.respostasAbertas);
 
   const total = Math.round(experiencia + disc + segmento + disponibilidade + respostasAbertas);
 
